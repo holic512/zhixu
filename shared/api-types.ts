@@ -24,6 +24,7 @@ export type QuestionRecord=Omit<Question,'options'|'images'>&{id:string;options:
 export type QuestionWrite=Question&{answer:string|string[]};
 export type Revision={id:string;answer:string;operation:string;snapshot:QuestionWrite|null;created_at:string};
 export type ImportPreview={total:number;valid:number;invalid:number[];duplicates?:number};
+export type ImportResult={imported:number};
 export type Attempt={source:string;kind?:string;status:string;durationMs?:number;reason?:string;message?:string;code?:string;stage?:string;httpStatus?:number;candidateAnswer?:string|string[];ai?:{model?:string;apiFormat?:string;maxTokens?:number;vision?:boolean}};
 export type QueryResult={code:number;question:string;answer:string|null;source:string|null;failureCode?:string;message?:string;durationMs:number;requestId?:string;attempts:Attempt[]};
 export type QueryEvent={id:string;title:string;status:QueryStatus;source:string|null;username?:string;user_id?:number;token_name:string|null;token_prefix?:string;duration_ms:number;created_at:string;failure_code:string|null;request_id?:string;query_id?:string;attempts:Attempt[];question_snapshot:Question|null;group_key?:string;approximate?:boolean;failure_count?:number;first_failure?:string;last_failure?:string};

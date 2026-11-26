@@ -3,14 +3,15 @@
  * @project ocs-answer-hub
  * @module modules
  * @description 本地题库管理 HTTP 边界。
- * @logic 校验题目与分页，兼容部分编辑及引擎持久化导出。
- * @dependencies fastify, zod, QuestionsService
+ * @logic 校验题目与分页，按共享条数和容量限制受理导入，兼容部分编辑及引擎持久化导出。
+ * @dependencies fastify, zod, QuestionsService, shared/contracts
  * @index_tags questions, routes
  * @author holic512
  */
 import type {FastifyInstance} from 'fastify';
 import type pg from 'pg';
 import {z} from 'zod';
+import {QUESTION_IMPORT_LIMITS} from '../../shared/contracts.js';
 import {idSchema,paginationSchema,questionSchema} from '../core.js';
 import {QuestionsService} from '../services/questions.js';
 export {storeQuestion} from '../services/questions.js';
@@ -26,5 +27,5 @@ export function registerQuestions(app:FastifyInstance,pool:pg.Pool){
  app.put<{Params:{id:string}}>('/api/admin/questions/:id',async req=>{const id=idSchema.parse(req.params.id),old=await service.detail(id),data=withAnswer.parse({...old,...req.body as object});await service.update(id,data);return {ok:true};});
  app.delete<{Params:{id:string}}>('/api/admin/questions/:id',async req=>{await service.remove(idSchema.parse(req.params.id));return {ok:true};});
  app.get('/api/admin/export',()=>service.export());
- app.post('/api/admin/import',req=>service.import(z.object({preview:z.boolean().default(true),overwrite:z.boolean().default(false),items:z.array(withAnswer).min(1).max(500)}).parse(req.body)));
+ app.post('/api/admin/import',{bodyLimit:QUESTION_IMPORT_LIMITS.maxBytes},req=>service.import(z.object({preview:z.boolean().default(true),overwrite:z.boolean().default(false),items:z.array(withAnswer).min(1).max(QUESTION_IMPORT_LIMITS.maxItems)}).parse(req.body)));
 }

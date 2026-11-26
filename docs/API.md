@@ -58,13 +58,21 @@
 | `GET /api/admin/questions/:id/versions` | `{items}`，包含答案、操作、快照、时间 |
 | `GET /api/admin/courses` | 课程列表 |
 | `GET /api/admin/export` | `{format:'ocs-answer-hub-v2',items}` |
-| `POST /api/admin/import` | `{preview:true,overwrite:false,items}`；最多 500 条，默认预览且不覆盖重复题 |
+| `POST /api/admin/import` | `{preview:true,overwrite:false,items}`；最多 500 条、请求体最多 5 MiB，默认预览且不覆盖重复题 |
 | `GET /api/admin/stats` | `{totals,questions,sources,daily,recent}`；查询汇总最近 30 天，缓存 15 秒，题目数为当前总数 |
 | `GET /api/admin/query-events` | 全局记录；详情和失败导出路径同工作区 |
 
 `/api/admin/query` 作为兼容入口保留，同样必须传本人 `tokenId`，不绕过积分或凭证限额。用户删除会撤销其凭证、清除会话、取消活动任务并关闭所属计划；必须保留至少一名有效管理员。
 
 查询记录支持 `q,status,from,to,source,page,pageSize,view,group_key`，管理接口另支持 `user_id`；`view=failures` 聚合重复失败。纯日期按中国标准时间日边界处理。这里的 `source` 是一次查询的命中／尝试通道，不是已移除的题目字段。
+
+### 题库导入
+
+管理员在「本地题库 → 导入」上传 JSON／CSV 或直接粘贴 JSON。文件内容可继续编辑，页面提供单选、多选、判断和填空的完整 JSON 示例，可复制或下载。JSON 内容支持题目数组、`{items:[...]}` 和本系统导出的 `{format,items}`；发送到 API 时统一使用上表的请求对象。单个文件及实际导入请求均不得超过 5 MiB，单次最多 500 题。
+
+每题必填 `title`、`answer`；建议明确填写 `type`（`single`／`multiple`／`judgement`／`completion`），保留原有 `unknown` 兼容行为。选择题需要 `options`，推荐文本数组；`course` 和 `images` 可选。单选答案填写选项文本，多选答案使用文本数组，判断答案填写「正确」或「错误」，填空答案按空位顺序填写字符串或数组；多选和多空继续支持 `#` 分隔字符串。
+
+预览返回 `{total,valid,invalid}`，`invalid` 是从 1 开始的无效答案题号，预览不会写入题库。字段格式错误返回 HTTP `400`，`fields` 中的 `items.0.title` 表示第 1 题的题干错误。修改内容或覆盖选项后必须重新预览；存在无效答案时整批不能提交。确认时传 `preview:false`，返回 `{imported}`，该数值表示已处理条数，包含默认跳过的重复题；`overwrite:true` 会覆盖同指纹题目的答案并保留修改记录。超出请求体限制返回 HTTP `413`。5 MiB 容量仅适用于导入接口，其他接口沿用原有限制。
 
 ## 运维
 
