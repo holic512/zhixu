@@ -26,6 +26,17 @@ class DeploymentTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("install,start,restart,update,stop,status,logs,check", result.stdout)
 
+    def test_default_directory_preserves_existing_installation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            current = root / "data" / "zhixu"
+            legacy = root / "data" / "ocs-answer-hub"
+            self.assertEqual(deploy.default_directory(root), current)
+            legacy.mkdir(parents=True)
+            self.assertEqual(deploy.default_directory(root), legacy)
+            current.mkdir()
+            self.assertEqual(deploy.default_directory(root), current)
+
     def test_saved_settings_and_cli_override(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

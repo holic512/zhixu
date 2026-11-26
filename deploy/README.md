@@ -16,13 +16,13 @@
 python3 deploy/deploy.py install --dir /data/ocs-answer-hub --network 已有数据库网络名
 ```
 
-默认镜像为 `ghcr.io/holic512/ocs-answer-hub:latest`；可用 `--image` 指定已发布版本，`--port` 指定宿主机端口，`--bind` 指定宿主机 IP。默认仅绑定 `127.0.0.1:18771`。
+默认镜像为 `ghcr.io/holic512/zhixu:latest`；可用 `--image` 指定已发布版本，`--port` 指定宿主机端口，`--bind` 指定宿主机 IP。默认仅绑定 `127.0.0.1:18771`。
 
 安装会拉取镜像，初始化缺失的 Compose 和配置，校验后启动。首次生成的配置没有数据库密码，脚本会提示编辑 `/data/ocs-answer-hub/config/config.env`，填写后运行 `start` 即可。提前放置的配置、已有 Compose 和持久化数据不覆盖。
 
 ## 常用操作
 
-下面均使用同一个部署目录；不传 `--dir` 时默认当前工作目录下的 `data/ocs-answer-hub`，服务器建议始终使用绝对路径。
+下面均使用同一个部署目录；不传 `--dir` 时，新安装默认当前工作目录下的 `data/zhixu`；若只有已有的 `data/ocs-answer-hub`，继续沿用该目录。服务器建议始终使用绝对路径。
 
 ```sh
 # 启动；也用于应用修改后的 Compose 参数，会按需重新创建容器。
@@ -35,7 +35,7 @@ python3 deploy/deploy.py restart --dir /data/ocs-answer-hub
 python3 deploy/deploy.py update --dir /data/ocs-answer-hub
 
 # 升级到指定的已发布版本；成功后保存新镜像版本。
-python3 deploy/deploy.py update --dir /data/ocs-answer-hub --image ghcr.io/holic512/ocs-answer-hub:目标版本
+python3 deploy/deploy.py update --dir /data/ocs-answer-hub --image ghcr.io/holic512/zhixu:目标版本
 
 # 停止，保留容器、配置、存储和数据库数据。
 python3 deploy/deploy.py stop --dir /data/ocs-answer-hub
@@ -60,7 +60,7 @@ python3 deploy/deploy.py check --dir /data/ocs-answer-hub
 发布了包含本脚本的新镜像后，服务器无需克隆仓库：
 
 ```sh
-docker run --rm --entrypoint cat ghcr.io/holic512/ocs-answer-hub:latest /app/defaults/deploy.py > deploy.py
+docker run --rm --entrypoint cat ghcr.io/holic512/zhixu:latest /app/defaults/deploy.py > deploy.py
 python3 deploy.py install --dir /data/ocs-answer-hub --network 已有数据库网络名
 ```
 

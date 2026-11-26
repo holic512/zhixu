@@ -29,7 +29,7 @@ data/
 
 工作流：`.github/workflows/docker.yml`。
 
-- 推送 `main`：测试后发布 `ghcr.io/holic512/ocs-answer-hub:latest` 和提交 SHA 标签。
+- 推送 `main`：测试后发布 `ghcr.io/holic512/zhixu:latest` 和提交 SHA 标签。
 - 推送与应用版本一致的 `vX.Y.Z`：发布 `X.Y.Z`、`vX.Y.Z` 和 SHA 标签；Tag 与 package.json 不一致时拒绝发布。
 - `latest` 只跟随 main，发布旧版本 Tag 不会覆盖它。
 - PR：测试并构建镜像，不登录或推送 GHCR。
@@ -48,7 +48,7 @@ data/
 只需 Docker 即可从镜像取出部署脚本，无需克隆源码或安装 Node.js：
 
 ```sh
-IMAGE=ghcr.io/holic512/ocs-answer-hub:latest
+IMAGE=ghcr.io/holic512/zhixu:latest
 docker pull "$IMAGE"
 docker run --rm --entrypoint cat "$IMAGE" /app/defaults/deploy.sh > deploy.sh
 # 将“已有数据库网络名”替换为实际值；部署路径可改为绝对路径。
@@ -173,12 +173,16 @@ docker compose -f compose.yml up -d --force-recreate --wait
 使用已经发布的目标版本替换命令中的版本号：
 
 ```sh
-sh deploy.sh ghcr.io/holic512/ocs-answer-hub:目标版本 ./data/ocs-answer-hub
+sh deploy.sh ghcr.io/holic512/zhixu:目标版本 ./data/ocs-answer-hub
 ```
 
 已有部署可省略网络参数，继续使用原 `.env`；若明确传入新网络，脚本会按新网络重新创建容器。脚本不替换已有 compose.yml，也不修改 config/config.env；启动成功后仅同步 .env 中的镜像及明确指定的网络参数。
 
 手动升级也可修改 `.env` 的 APP_IMAGE，然后依次执行 pull、init、check、up。新版 Compose 模板若涉及挂载或网络变化，应审阅后手动合并，脚本不会自动替换用户容器定义。
+
+### 从旧仓库镜像切换
+
+旧部署的 `.env` 会保留原镜像地址。仓库改名后，在原部署目录执行 `python3 deploy.py update --dir "$PWD" --image ghcr.io/holic512/zhixu:latest`，继续使用原目录、数据库与主密钥。新安装默认 `data/zhixu`，仅存在旧 `data/ocs-answer-hub` 时仍沿用旧目录。
 
 ### 从旧版 state/.env 部署迁移
 
@@ -193,11 +197,11 @@ sh deploy.sh ghcr.io/holic512/ocs-answer-hub:目标版本 ./data/ocs-answer-hub
 本地验收：
 
 ```sh
-docker build -f deploy/Dockerfile -t ocs-deployment-check:base .
+docker build -f deploy/Dockerfile -t zhixu-deployment-check:base .
 node scripts/deployment-acceptance.mjs
 ```
 
-该测试创建独立 PostgreSQL、网络和宿主机临时绑定目录，覆盖首次初始化、预置配置、错误配置、只读挂载、修改后重启、容器重建、模拟新版镜像升级及配置/密钥/数据库数据持久化；结束清理本次测试资源。模拟镜像升级用于验证持久化，不代表 GHCR 发布或线上升级已完成。
+该测试创建独立 PostgreSQL、网络和宿主机临时绑定目录，覆盖首次初始化、预置配置、错误配置、只读挂载、修改后重启、容器重建、模拟新版镜像升级及配置/密钥/数据库数据持久化；结束清理本次测试资源。额外验证超过 256 KiB 的题库 JSON 预览、导入及升级后的题目保留。模拟镜像升级用于验证持久化，不代表 GHCR 发布或线上升级已完成。
 
 真实 GHCR 发布需将工作流提交并推送到 GitHub 后观察 Actions。真实反代、HTTPS、OCS 客户端和供应商调用需要另行验收，不以本地夹具或镜像构建成功代替。
 

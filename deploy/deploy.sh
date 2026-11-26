@@ -3,8 +3,11 @@
 # 应用配置位于 config/config.env；同目录 .env 只保存 Compose 创建参数。
 set -eu
 umask 077
-IMAGE=${1:?请指定镜像，例如 ghcr.io/holic512/ocs-answer-hub:1.0.2}
-DEPLOY_DIR=${2:-./data/ocs-answer-hub}
+IMAGE=${1:?请指定镜像，例如 ghcr.io/holic512/zhixu:latest}
+DEPLOY_DIR=${2:-./data/zhixu}
+if [ "$#" -lt 2 ] && [ ! -d "$DEPLOY_DIR" ] && [ -d ./data/ocs-answer-hub ]; then
+  DEPLOY_DIR=./data/ocs-answer-hub
+fi
 case "$IMAGE" in *[!a-zA-Z0-9./:@_-]*) echo '镜像地址包含无效字符' >&2; exit 1;; esac
 if [ "$#" -ge 3 ]; then
   DATABASE_NETWORK=$3

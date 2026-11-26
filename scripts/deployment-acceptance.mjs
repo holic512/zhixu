@@ -1,9 +1,9 @@
 /**
  * @file deployment-acceptance.mjs
- * @project ocs-answer-hub
+ * @project zhixu
  * @module 部署验收
  * @description 使用临时 PostgreSQL、网络和宿主机绑定目录验证镜像部署生命周期。
- * @logic 初始化、预置配置、校验、重启、重建、模拟镜像升级及持久化，结束仅清理本次资源。
+ * @logic 初始化、配置校验、题库导入、重启、重建与模拟镜像升级，验证持久化并清理本次资源。
  * @dependencies Docker Compose, node:assert, node:child_process, node:fs
  * @index_tags deployment, docker, verification
  * @author holic512
@@ -14,8 +14,8 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-const image=process.env.DEPLOYMENT_TEST_IMAGE??'ocs-deployment-check:base';
-const upgrade=`ocs-deployment-check:upgrade-${process.pid}`;
+const image=process.env.DEPLOYMENT_TEST_IMAGE??'zhixu-deployment-check:base';
+const upgrade=`zhixu-deployment-check:upgrade-${process.pid}`;
 const project=`ocs-deploy-${process.pid}`;
 const network=project+'-net';
 const postgres=project+'-postgres';
@@ -77,6 +77,23 @@ try{
  assert.equal(initialized,'201');assert.equal(setupStatus().required,false);
  steps.push('新数据库不生成管理员或明文密码文件，通过网页初始化接口创建管理员后关闭初始化入口');
 
+ const imported=JSON.parse(compose(['exec','-T','app','node','--input-type=module','-e',`
+ const assert=(await import('node:assert/strict')).default;
+ const headers={origin:'https://first.example.com','Content-Type':'application/json'};
+ const login=await fetch('http://127.0.0.1:18771/api/login',{method:'POST',headers,body:JSON.stringify({username:'deployment-admin',password:'setup-fixture-password'})});
+ assert.equal(login.status,200);
+ const session=await login.json();
+ const request=async body=>{
+  const result=await fetch('http://127.0.0.1:18771/api/admin/import',{method:'POST',headers:{...headers,cookie:login.headers.get('set-cookie').split(';')[0],'X-CSRF-Token':session.csrf},body:JSON.stringify(body)});
+  assert.equal(result.status,200,await result.clone().text());return result.json();
+ };
+ const items=Array.from({length:100},(_,index)=>({title:'部署导入容量题 '+index+' '+'中'.repeat(1000),type:'completion',answer:['部署验收答案'],course:'deployment-import-fixture'}));
+ assert(Buffer.byteLength(JSON.stringify({items}))>256*1024);
+ const preview=await request({items});assert.deepEqual(preview,{total:100,valid:100,invalid:[]});
+ console.log(JSON.stringify(await request({items,preview:false})));`]));
+ assert.deepEqual(imported,{imported:100});
+ steps.push('镜像中的题库导入接口预览并保存超过 256 KiB 的 JSON，验证共享契约与导入容量限制已进入运行镜像');
+
  assert.equal(inspect().Mounts.find(m=>m.Destination==='/app/config').RW,false);
  assert.equal(inspect().Mounts.find(m=>m.Destination==='/app/logs').RW,true);
  const logMarker='deployment-log-persistence-fixture';
@@ -126,6 +143,7 @@ try{
  steps.push('启动日志持久化到宿主机 logs/app.log，重启、重建和镜像升级后原日志保留');
  assert.equal(helper("console.log(require('fs').readFileSync('/fixture/storage/persistence-fixture','utf8'))"),'preserved');
  assert.equal(docker(['exec',postgres,'psql','-U','postgres','-d','answer_hub','-tAc',"SELECT value->>'deployment_fixture' FROM settings WHERE id=1"]),'preserved');
+ assert.equal(docker(['exec',postgres,'psql','-U','postgres','-d','answer_hub','-tAc',"SELECT count(*) FROM questions WHERE course='deployment-import-fixture'"]),'100');
  assert.equal(probeOrigin('https://second.example.com'),401);
  steps.push('切换到不同镜像 ID 和新版模板后，原配置、存储文件、密钥和数据库数据保留');
 

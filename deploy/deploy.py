@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
 @file deploy.py
-@project ocs-answer-hub
+@project zhixu
 @module Linux 基础运维
 @description 使用 Python 3 标准库管理现有 Docker Compose 部署。
-@logic 安装初始化、配置校验、启停重启、拉取更新，保留配置及持久化数据。
+@logic 安装初始化、配置校验、启停重启与拉取更新，沿用已有部署目录及持久化数据。
 @dependencies Python 3.8+, Docker Engine, Docker Compose 插件
 @index_tags deployment, operations, linux
 @author holic512
@@ -21,7 +21,7 @@ import tempfile
 import time
 
 DEFAULTS = {
-    "APP_IMAGE": "ghcr.io/holic512/ocs-answer-hub:latest",
+    "APP_IMAGE": "ghcr.io/holic512/zhixu:latest",
     "DATABASE_NETWORK": "databases",
     "BIND_ADDRESS": "127.0.0.1",
     "APP_PORT": "18771",
@@ -73,7 +73,7 @@ def main():
 def arguments():
     parser = argparse.ArgumentParser(description="知序基础运维，Python 3 标准库，无需 pip 安装依赖")
     parser.add_argument("command", choices=["install", "start", "restart", "update", "stop", "status", "logs", "check"], help="安装、启动、重启、更新、停止、状态、日志、配置校验")
-    parser.add_argument("--dir", dest="directory", type=Path, default=Path.cwd() / "data" / "ocs-answer-hub", help="部署目录，默认 ./data/ocs-answer-hub；服务器推荐使用绝对路径")
+    parser.add_argument("--dir", dest="directory", type=Path, default=default_directory(Path.cwd()), help="部署目录，新安装默认 ./data/zhixu；服务器推荐使用绝对路径")
     parser.add_argument("--image", help="安装/更新使用的镜像，默认沿用已保存镜像，首次默认 latest")
     parser.add_argument("--network", help="安装/更新使用的已有数据库 Docker 网络，首次默认 databases")
     parser.add_argument("--port", type=int, help="安装/更新使用的宿主机端口，默认 18771；0 表示 Docker 自动分配")
@@ -89,6 +89,12 @@ def arguments():
     if args.tail < 0:
         parser.error("--tail 不能小于 0")
     return args
+
+
+def default_directory(root):
+    directory = root / "data" / "zhixu"
+    legacy = root / "data" / "ocs-answer-hub"
+    return legacy if not directory.exists() and legacy.is_dir() else directory
 
 
 def settings_for(directory, args):

@@ -1,7 +1,7 @@
-# 保存为 data/ocs-answer-hub/compose.yml。
+# 保存为 data/zhixu/compose.yml。
 # 同目录 .env 仅保存镜像、网络、端口等 Compose 参数，不存放应用密码。
 x-runtime: &runtime
-  image: ${APP_IMAGE:-ghcr.io/holic512/ocs-answer-hub:latest}
+  image: ${APP_IMAGE:-ghcr.io/holic512/zhixu:latest}
   environment:
     CONFIG_FILE: /app/config/config.env
     NODE_ENV: production
